@@ -1,0 +1,31 @@
+{
+  "name": "job-copilot-backend",
+  "version": "1.0.0",
+  "description": "India-focused remote job aggregation backend for Technical Support Engineer roles",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "scrape": "node src/services/scrapeOrchestrator.js",
+    "db:init": "node src/db/schema.js"
+  },
+  "dependencies": {
+    "axios": "^1.6.8",
+    "better-sqlite3": "^9.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.18.3",
+    "express-rate-limit": "^7.2.0",
+    "node-cron": "^3.0.3",
+    "playwright": "^1.43.1",
+    "winston": "^3.13.0",
+    "fastest-levenshtein": "^1.0.16",
+    "node-fetch": "^2.7.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

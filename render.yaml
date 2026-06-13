@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: job-copilot-api
+    env: node
+    buildCommand: "npm install && npx playwright install chromium --with-deps"
+    startCommand: "node src/db/schema.js && npm start"
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      - key: DB_PATH
+        value: ./data/jobs.db
+      - key: PLAYWRIGHT_HEADLESS
+        value: "true"
+      - key: ADZUNA_APP_ID
+        sync: false
+      - key: ADZUNA_APP_KEY
+        sync: false
+      - key: SERPAPI_KEY
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_CHAT_ID
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: ADMIN_API_KEY
+        sync: false

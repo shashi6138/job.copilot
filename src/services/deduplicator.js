@@ -32,6 +32,29 @@ function markUrlSeen(url) {
   `).run(hash, url);
 }
 
+function refreshExistingJob(job) {
+  const result = db.prepare(`
+    UPDATE jobs
+    SET title = @title,
+        company = @company,
+        location = @location,
+        remote_type = @remote_type,
+        geo = @geo,
+        source = @source,
+        posted_at = @posted_at,
+        salary = @salary,
+        description = @description,
+        skills = @skills,
+        tags = @tags,
+        rank_score = @rank_score,
+        fetched_at = @fetched_at,
+        is_active = 1
+    WHERE apply_url = @apply_url
+  `).run(job);
+
+  return result.changes > 0;
+}
+
 /**
  * Check fuzzy duplicate — same company + similar title
  * Uses Levenshtein distance threshold
@@ -70,7 +93,15 @@ function isDuplicate(job) {
  * Returns true if inserted, false if skipped
  */
 function insertIfNew(job) {
-  if (isDuplicate(job)) return false;
+  if (isSeenUrl(job.apply_url)) {
+    refreshExistingJob(job);
+    return false;
+  }
+
+  if (isFuzzyDuplicate(job.title, job.company)) {
+    markUrlSeen(job.apply_url);
+    return false;
+  }
 
   try {
     db.prepare(`

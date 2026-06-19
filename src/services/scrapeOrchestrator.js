@@ -4,6 +4,7 @@
 
 require('dotenv').config();
 const logger        = require('../utils/logger');
+const db            = require('../db/db');
 const { normalize } = require('./jobNormalizer');
 const { rankJob }   = require('./jobNormalizer');
 const { bulkInsert, purgeStaleJobs } = require('./deduplicator');
@@ -45,6 +46,10 @@ const { rankJob: rank } = (() => {
  */
 async function runAllScrapers({ includeSlow = true, includeNaukri = false } = {}) {
   const startTime = Date.now();
+  const run = db.prepare(`
+    INSERT INTO scraper_runs (source, status) VALUES ('all', 'running')
+  `).run();
+  const runId = run.lastInsertRowid;
   logger.info('═══════════════════════════════════════');
   logger.info('  Scrape run started');
   logger.info('═══════════════════════════════════════');
@@ -164,6 +169,16 @@ async function runAllScrapers({ includeSlow = true, includeNaukri = false } = {}
   logger.info(`  Scrape complete in ${duration}s`);
   logger.info(`  Raw: ${allRaw.length} | New: ${inserted} | Skipped: ${skipped}`);
   logger.info('═══════════════════════════════════════');
+
+  db.prepare(`
+    UPDATE scraper_runs
+    SET ended_at = datetime('now'),
+        jobs_found = ?,
+        jobs_new = ?,
+        status = 'success',
+        error_msg = NULL
+    WHERE id = ?
+  `).run(allRaw.length, inserted, runId);
 
   return summary;
 }

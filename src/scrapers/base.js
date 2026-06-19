@@ -126,6 +126,7 @@ class BaseScraper {
       logger.error(`[${this.name}] Scraper failed: ${err.message}`);
     } finally {
       await this.closeBrowser();
+      this.endRun(jobs.length, 0, errorMsg ? 'error' : 'success', errorMsg);
     }
 
     return { jobs, error: errorMsg, runId: this.runId };

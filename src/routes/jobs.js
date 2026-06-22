@@ -213,38 +213,20 @@ router.get('/:id', (req, res) => {
 });
 
 // ── GET /api/jobs/stats/summary ───────────────────────────
-router.get('/stats/summary', (req, res) => {
-  try {
-    const total  = db.prepare("SELECT COUNT(*) as n FROM jobs WHERE is_active=1").get().n;
-    const india  = db.prepare("SELECT COUNT(*) as n FROM jobs WHERE geo='india' AND is_active=1").get().n;
-    const remote = db.prepare("SELECT COUNT(*) as n FROM jobs WHERE geo='remote' AND is_active=1").get().n;
-    const today  = db.prepare("SELECT COUNT(*) as n FROM jobs WHERE fetched_at >= datetime('now','-1 days') AND is_active=1").get().n;
-    const week   = db.prepare("SELECT COUNT(*) as n FROM jobs WHERE fetched_at >= datetime('now','-7 days') AND is_active=1").get().n;
-    const highScore = db.prepare("SELECT COUNT(*) as n FROM jobs WHERE rank_score >= 70 AND is_active=1").get().n;
-    const withSalary = db.prepare("SELECT COUNT(*) as n FROM jobs WHERE salary IS NOT NULL AND salary != '' AND is_active=1").get().n;
-
-    const bySrc = db.prepare(
-      "SELECT source, COUNT(*) as count FROM jobs WHERE is_active=1 GROUP BY source ORDER BY count DESC"
-    ).all();
-
-    const lastRun = db.prepare(
-      "SELECT * FROM scraper_runs ORDER BY started_at DESC LIMIT 1"
-    ).get();
-
-    res.json({
-      success: true,
-      data: { total, india, remote, today, week, highScore, withSalary, bySrc, lastRun },
-    });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
 // ── POST /api/jobs/scrape ─────────────────────────────────
 // Manually trigger a scrape run (protected by API key)
 router.post('/scrape', async (req, res) => {
-  const key = req.headers['x-api-key'];
-  if (key !== process.env.ADMIN_API_KEY) {
+  const expectedKey = (process.env.ADMIN_API_KEY || '').trim();
+  const authHeader = req.headers.authorization || '';
+  const headerKey = req.headers['x-api-key'] || '';
+  const key = String(headerKey || authHeader.replace(/^Bearer\s+/i, '')).trim();
+
+  if (!expectedKey) {
+    logger.error('Manual scrape blocked: ADMIN_API_KEY is not configured');
+    return res.status(503).json({ success: false, error: 'Admin API key is not configured on backend' });
+  }
+
+  if (key !== expectedKey) {
     return res.status(401).json({ success: false, error: 'Unauthorized' });
   }
   res.json({ success: true, message: 'Scrape started in background' });

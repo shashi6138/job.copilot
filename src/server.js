@@ -7,6 +7,7 @@ const express     = require('express');
 const cors        = require('cors');
 const rateLimit   = require('express-rate-limit');
 const logger      = require('./utils/logger');
+const db          = require('./db/db');
 const { startScheduler } = require('./scheduler/cron');
 
 // Initialize DB schema on first run
@@ -45,11 +46,23 @@ app.use('/api/jobs', require('./routes/jobs'));
 
 // Health check
 app.get('/health', (_req, res) => {
+  const expectedKey = (process.env.ADMIN_API_KEY || process.env.ADMIN_KEY || process.env.API_KEY || '').trim();
+  const keySource = process.env.ADMIN_API_KEY ? 'ADMIN_API_KEY'
+    : process.env.ADMIN_KEY ? 'ADMIN_KEY'
+    : process.env.API_KEY ? 'API_KEY'
+    : 'none';
+  const jobsCount = db.prepare('SELECT COUNT(*) as n FROM jobs').get().n;
+  const lastRun = db.prepare('SELECT * FROM scraper_runs ORDER BY started_at DESC LIMIT 1').get();
+
   res.json({
     status: 'ok',
     uptime: process.uptime().toFixed(0) + 's',
     time:   new Date().toISOString(),
     env:    process.env.NODE_ENV,
+    adminKeyConfigured: !!expectedKey,
+    adminKeySource: keySource,
+    jobsCount,
+    lastRun,
   });
 });
 

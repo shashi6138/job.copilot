@@ -216,14 +216,17 @@ router.get('/:id', (req, res) => {
 // ── POST /api/jobs/scrape ─────────────────────────────────
 // Manually trigger a scrape run (protected by API key)
 router.post('/scrape', async (req, res) => {
-  const expectedKey = (process.env.ADMIN_API_KEY || '').trim();
+  const expectedKey = (process.env.ADMIN_API_KEY || process.env.ADMIN_KEY || process.env.API_KEY || '').trim();
   const authHeader = req.headers.authorization || '';
   const headerKey = req.headers['x-api-key'] || '';
   const key = String(headerKey || authHeader.replace(/^Bearer\s+/i, '')).trim();
 
   if (!expectedKey) {
-    logger.error('Manual scrape blocked: ADMIN_API_KEY is not configured');
-    return res.status(503).json({ success: false, error: 'Admin API key is not configured on backend' });
+    logger.error('Manual scrape blocked: admin API key is not configured');
+    return res.status(503).json({
+      success: false,
+      error: 'Admin API key is not configured on backend. Set ADMIN_API_KEY or ADMIN_KEY.',
+    });
   }
 
   if (key !== expectedKey) {
